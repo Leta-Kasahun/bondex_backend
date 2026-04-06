@@ -121,32 +121,10 @@ import express from "express";
 //   }
 // }// test-clean.ts - This has NO external imports
 // Run this to see what's really happening
-import { google } from 'googleapis';
-import dotenv from 'dotenv';
-import path from 'path';
+import { Request,Response } from "express";
+import { env } from "./config/env.config";
+import app from "./config/app.config";
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+app.get("/",(req:Request,res:Response)=>res.status(200).json({success:true,message:"Boom TypeScript Express API is Running"}));
 
-const auth = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
-
-auth.setCredentials({
-  refresh_token: process.env.GMAIL_REFRESH_TOKEN
-});
-
-const gmail = google.gmail({ version: 'v1', auth });
-
-async function test() {
-  try {
-    const res = await gmail.users.labels.list({ userId: 'me' });
-    console.log('✅ GMAIL API WORKING!');
-    console.log('Labels found:', res.data.labels?.length);
-  } catch (error) {
-    console.log('❌ Failed:', error);
-  }
-}
-
-test();
+app.listen(env.PORT,()=>console.log(`server is lestning to port http://localhost:${env.PORT}`))

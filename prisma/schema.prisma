@@ -76,7 +76,7 @@ model Admin {
 
 model AdminOTP {
   id        String   @id @default(cuid())
-  adminId   String
+  adminId   String   @unique
   otpCode   String
   expiresAt DateTime
   used      Boolean  @default(false)
@@ -104,10 +104,9 @@ model AdminVerification {
 
   @@map("admin_verifications")
 }
-
 model AdminSession {
   id           String      @id @default(cuid())
-  adminId      String
+  adminId      String      @unique
   refreshToken String      @unique
   expiresAt    DateTime
   createdAt    DateTime    @default(now())
@@ -119,7 +118,6 @@ model AdminSession {
   @@index([refreshToken])
   @@map("admin_sessions")
 }
-
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -134,7 +132,7 @@ model User {
   userVerification UserVerification?
   userOTP          UserOTP?
   userGoogleAuth   UserGoogleAuth?
-  sessions         Session[]
+
 
   @@map("users")
 }
