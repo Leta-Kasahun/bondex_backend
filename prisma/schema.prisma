@@ -58,25 +58,18 @@ enum ChannelProvider {
 }
 
 model Admin {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  password       String
-  name           String
-  isActive       Boolean  @default(true)
-  role           String   @default("SUPER_ADMIN")
-  
-  emailVerified  Boolean  @default(false)
-  emailVerifiedAt DateTime?
-  verificationToken String? @unique
-  
-  loginAttempts  Int      @default(0)
-  lockedUntil    DateTime?
-  lastLoginAt    DateTime?
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  isActive  Boolean  @default(true)
+  role      String   @default("SUPER_ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  otps      AdminOTP[]
+  otps             AdminOTP[]
+  adminVerification AdminVerification?
+  adminSession      AdminSession?
 
   @@map("admins")
 }
@@ -95,24 +88,100 @@ model AdminOTP {
   @@map("admin_otps")
 }
 
-model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  password       String
-  name           String
-  isActive       Boolean  @default(true)
-  
-  emailVerified  Boolean  @default(false)
-  emailVerifiedAt DateTime?
+model AdminVerification {
+  id               String   @id @default(cuid())
+  adminId          String   @unique
+  emailVerified    Boolean  @default(false)
+  emailVerifiedAt  DateTime?
   verificationToken String? @unique
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  loginAttempts    Int      @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  businesses    Business[]
-  notes         Note[]
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_verifications")
+}
+
+model AdminSession {
+  id           String      @id @default(cuid())
+  adminId      String
+  refreshToken String      @unique
+  expiresAt    DateTime
+  createdAt    DateTime    @default(now())
+  revokedAt    DateTime?
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([refreshToken])
+  @@map("admin_sessions")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businesses      Business[]
+  notes           Note[]
+  userVerification UserVerification?
+  userOTP          UserOTP?
+  userGoogleAuth   UserGoogleAuth?
+  sessions         Session[]
 
   @@map("users")
+}
+
+model UserVerification {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  emailVerified    Boolean  @default(false)
+  emailVerifiedAt  DateTime?
+  verificationToken String? @unique
+  isVerified       Boolean  @default(false)
+  verifiedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_verifications")
+}
+
+model UserOTP {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  otpCode    String
+  otpExpiresAt DateTime
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_otps")
+}
+
+model UserGoogleAuth {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  googleId   String   @unique
+  email      String
+  name       String
+  avatar     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_google_auths")
 }
 
 model Session {
