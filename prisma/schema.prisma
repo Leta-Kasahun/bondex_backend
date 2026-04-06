@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,322 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum SessionType {
+  ADMIN
+  USER
+}
+
+enum LeadStatus {
+  new
+  contacted
+  converted
+  ignored
+}
+
+enum LeadPriority {
+  low
+  medium
+  high
+}
+
+enum LeadPlatform {
+  telegram
+  gmail
+  facebook
+  instagram
+  website_form
+  direct_chat
+  email
+  website
+}
+
+enum DealStage {
+  qualified
+  proposal
+  negotiation
+  won
+  lost
+}
+
+enum NotificationType {
+  lead_created
+  high_priority_lead
+  stale_high_priority
+}
+
+enum ChannelProvider {
+  telegram
+  gmail
+  facebook
+  instagram
+}
+
+model Admin {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  name           String
+  isActive       Boolean  @default(true)
+  role           String   @default("SUPER_ADMIN")
+  
+  emailVerified  Boolean  @default(false)
+  emailVerifiedAt DateTime?
+  verificationToken String? @unique
+  
+  loginAttempts  Int      @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  otps      AdminOTP[]
+
+  @@map("admins")
+}
+
+model AdminOTP {
+  id        String   @id @default(cuid())
+  adminId   String
+  otpCode   String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_otps")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  name           String
+  isActive       Boolean  @default(true)
+  
+  emailVerified  Boolean  @default(false)
+  emailVerifiedAt DateTime?
+  verificationToken String? @unique
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  businesses    Business[]
+  notes         Note[]
+
+  @@map("users")
+}
+
+model Session {
+  id           String      @id @default(cuid())
+  userId       String
+  userType     SessionType
+  refreshToken String      @unique
+  expiresAt    DateTime
+  createdAt    DateTime    @default(now())
+  revokedAt    DateTime?
+
+  @@index([userId, userType])
+  @@index([refreshToken])
+  @@map("sessions")
+}
+
+model Business {
+  id          String   @id @default(cuid())
+  name        String
+  type        String?
+  description String?
+  logo        String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  leads         Lead[]
+  deals         Deal[]
+  notifications Notification[]
+  integrations  Integration?
+  syncCursors   SyncCursor[]
+  chatSessions  ChatSession[]
+
+  @@index([ownerId])
+  @@map("businesses")
+}
+
+model Lead {
+  id          String       @id @default(cuid())
+  businessId  String
+  customerName  String?
+  customerEmail String?
+  customerPhone String?
+  message       String
+  platform      LeadPlatform
+  status        LeadStatus   @default(new)
+  priority      LeadPriority @default(medium)
+  aiScore       Int?
+  aiReasoning   String?
+  platformUserId String?
+  firstReplyAt  DateTime?
+  responseTimeMinutes Int?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  notes         Note[]
+  deals         Deal[]
+  notifications Notification[]
+
+  @@index([businessId])
+  @@index([status])
+  @@index([priority])
+  @@index([platform])
+  @@map("leads")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  content   String
+  leadId    String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([leadId])
+  @@map("notes")
+}
+
+model Deal {
+  id         String     @id @default(cuid())
+  businessId String
+  leadId     String
+  name       String
+  value      Float?
+  stage      DealStage  @default(qualified)
+  closedAt   DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([leadId])
+  @@index([stage])
+  @@map("deals")
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  businessId String
+  leadId     String
+  type       NotificationType
+  title      String
+  body       String
+  read       Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([leadId])
+  @@index([read])
+  @@map("notifications")
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  businessId  String   @unique
+
+  telegramBotToken String?
+  telegramBotUser  String?
+
+  gmailRefreshToken String?
+  gmailEmail        String?
+
+  facebookPageId    String?
+  facebookPageToken String?
+
+  instagramUserId   String?
+  instagramPageId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("integrations")
+}
+
+model ChatSession {
+  id            String   @id @default(cuid())
+  businessId    String
+  customerName  String?
+  customerEmail String?
+  sessionToken  String   @unique
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+
+  @@index([businessId])
+  @@index([sessionToken])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  sessionId   String
+  direction   String
+  message     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_messages")
+}
+
+model WebhookEvent {
+  id          String          @id @default(cuid())
+  provider    ChannelProvider
+  eventId     String          @unique
+  payload     Json
+  processed   Boolean         @default(false)
+  processedAt DateTime?
+  error       String?
+  receivedAt  DateTime        @default(now())
+
+  @@index([provider])
+  @@index([processed])
+  @@index([receivedAt])
+  @@map("webhook_events")
+}
+
+model SyncCursor {
+  id          String          @id @default(cuid())
+  businessId  String
+  provider    ChannelProvider
+  cursor      String
+  lastSyncAt  DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, provider])
+  @@index([businessId])
+  @@index([provider])
+  @@map("sync_cursors")
 }
