@@ -10,4 +10,8 @@ export const AUTH_MESSAGES = {
 	GOOGLE_TOKEN_INVALID: "Invalid Google token",
 	GOOGLE_EMAIL_NOT_VERIFIED: "Google account email is not verified",
 	GOOGLE_SIGNUP_SUCCESS: "Google signup successful",
+	USER_LOGIN_SUCCESS: "Login successful",
+	USER_INVALID_CREDENTIALS: "Invalid email or password",
+	USER_EMAIL_NOT_VERIFIED: "Please verify your email before login",
+	GOOGLE_LOGIN_SUCCESS: "Google login successful",
 } as const;

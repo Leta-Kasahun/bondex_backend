@@ -16,6 +16,8 @@ export type LoginUserBody = {
 	password: string;
 };
 
+export type LoginUserInput = LoginUserBody;
+
 export type VerifyRegistrationOtpInput = {
 	email: string;
 	otp: string;
@@ -26,6 +28,8 @@ export type VerifyRegistrationOtpBody = VerifyRegistrationOtpInput;
 export type GoogleSignupBody = {
 	idToken: string;
 };
+
+export type GoogleLoginBody = GoogleSignupBody;
 
 export type UserAuthSuccess = {
 	userId: string;

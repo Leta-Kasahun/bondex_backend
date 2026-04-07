@@ -1,6 +1,8 @@
 export type {
+	GoogleLoginBody,
 	GoogleSignupBody,
 	LoginUserBody,
+	LoginUserInput,
 	RegisterUserBody,
 	RegisterUserInput,
 	UserAuthSuccess,

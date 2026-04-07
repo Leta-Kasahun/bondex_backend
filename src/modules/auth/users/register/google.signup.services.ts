@@ -1,9 +1,9 @@
-import bcrypt from "bcrypt";
 import { authConfig } from "../../../../config/auth.config";
 import prisma from "../../../../config/prisma";
 import { AUTH_MESSAGES } from "../../../../constants/messages.constant";
 import { ApiException } from "../../../../exceptions/api.exception";
 import { generateUserTokenPair } from "../../../../utils/jwt.util";
+import { hashPassword } from "../../../../utils/password.util";
 import { GoogleSignupBody, UserAuthSuccess } from "../auth.types";
 
 type GoogleTokenInfo = {
@@ -98,7 +98,7 @@ export const googleSignupService = async (input: GoogleSignupBody): Promise<Goog
 		}
 
 		const randomPassword = `${tokenInfo.sub}.${Date.now()}`;
-		const hashedPassword = await bcrypt.hash(randomPassword, 12);
+		const hashedPassword = await hashPassword(randomPassword);
 
 		const createdUser = await tx.user.create({
 			data: {

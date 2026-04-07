@@ -1,9 +1,9 @@
-import bcrypt from "bcrypt";
 import prisma from "../../../../config/prisma";
 import { AUTH_MESSAGES } from "../../../../constants/messages.constant";
 import { ApiException } from "../../../../exceptions/api.exception";
 import { sendOtpEmail } from "../../../../utils/email.util";
 import { generateOtpCode, getOtpExpiryDate } from "../../../../utils/otp.util";
+import { hashPassword } from "../../../../utils/password.util";
 import { RegisterUserInput } from "../auth.types";
 
 export type RegisterUserResponse = {
@@ -24,7 +24,7 @@ export const registerUserService = async (
 		throw ApiException.conflict(AUTH_MESSAGES.USER_ALREADY_EXISTS);
 	}
 
-	const hashedPassword = await bcrypt.hash(input.password, 12);
+	const hashedPassword = await hashPassword(input.password);
 	const otpCode = generateOtpCode();
 	const otpExpiresAt = getOtpExpiryDate();
 

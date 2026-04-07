@@ -2,7 +2,10 @@ import { z } from "zod";
 import { ValidationIssue } from "../../../exceptions/validation.exception";
 import { ValidationResult } from "../../../middlewares/validate.middleware";
 import {
+	GoogleLoginBody,
 	GoogleSignupBody,
+	LoginUserBody,
+	LoginUserInput,
 	RegisterUserBody,
 	RegisterUserInput,
 	VerifyRegistrationOtpBody,
@@ -37,6 +40,11 @@ const verifyRegistrationOtpSchema = z.object({
 
 const googleSignupSchema = z.object({
 	idToken: z.string().trim().min(1, "Google idToken is required"),
+});
+
+const loginUserSchema = z.object({
+	email: z.string().trim().toLowerCase().email("A valid email is required"),
+	password: z.string().min(1, "Password is required"),
 });
 
 export const validateRegisterUserInput = (input: unknown): ValidationResult<RegisterUserInput> => {
@@ -77,6 +85,35 @@ export const validateVerifyRegistrationOtpInput = (
 };
 
 export const validateGoogleSignupInput = (input: unknown): ValidationResult<GoogleSignupBody> => {
+	const parsed = googleSignupSchema.safeParse(input);
+
+	if (!parsed.success) {
+		return { issues: mapZodIssues(parsed.error.issues) };
+	}
+
+	return {
+		value: parsed.data,
+	};
+};
+
+export const validateLoginUserInput = (input: unknown): ValidationResult<LoginUserInput> => {
+	const parsed = loginUserSchema.safeParse(input);
+
+	if (!parsed.success) {
+		return { issues: mapZodIssues(parsed.error.issues) };
+	}
+
+	const value: LoginUserBody = parsed.data;
+
+	return {
+		value: {
+			email: value.email,
+			password: value.password,
+		},
+	};
+};
+
+export const validateGoogleLoginInput = (input: unknown): ValidationResult<GoogleLoginBody> => {
 	const parsed = googleSignupSchema.safeParse(input);
 
 	if (!parsed.success) {
