@@ -42,4 +42,9 @@ export const AUTH_MESSAGES = {
 	LEAD_NOTE_UPDATED: "Lead note updated successfully",
 	LEAD_NOTES_LISTED: "Lead notes fetched successfully",
 	LEAD_NOTE_NOT_FOUND: "Lead note not found",
+	DEAL_CREATED: "Deal created successfully",
+	DEALS_LISTED: "Deals fetched successfully",
+	DEAL_STAGE_UPDATED: "Deal stage updated successfully",
+	DEAL_NOT_FOUND: "Deal not found",
+	DEAL_ALREADY_EXISTS_FOR_LEAD: "Deal already exists for this lead",
 } as const;
