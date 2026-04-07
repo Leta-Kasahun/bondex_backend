@@ -2,12 +2,16 @@ import { z } from "zod";
 import { ValidationIssue } from "../../../exceptions/validation.exception";
 import { ValidationResult } from "../../../middlewares/validate.middleware";
 import {
+	ForgotPasswordBody,
+	ForgotPasswordInput,
 	GoogleLoginBody,
 	GoogleSignupBody,
 	LoginUserBody,
 	LoginUserInput,
 	RegisterUserBody,
 	RegisterUserInput,
+	ResetPasswordBody,
+	ResetPasswordInput,
 	VerifyRegistrationOtpBody,
 	VerifyRegistrationOtpInput,
 } from "./auth.types";
@@ -46,6 +50,31 @@ const loginUserSchema = z.object({
 	email: z.string().trim().toLowerCase().email("A valid email is required"),
 	password: z.string().min(1, "Password is required"),
 });
+
+const forgotPasswordSchema = z.object({
+	email: z.string().trim().toLowerCase().email("A valid email is required"),
+});
+
+const resetPasswordSchema = z
+	.object({
+		email: z.string().trim().toLowerCase().email("A valid email is required"),
+		otp: z
+			.string()
+			.trim()
+			.regex(/^\d{6}$/, "OTP must be a 6 digit code"),
+		newPassword: z
+			.string()
+			.min(6, "New password must be at least 6 characters")
+			.max(72, "New password must be at most 72 characters"),
+		confirmPassword: z
+			.string()
+			.min(6, "Confirm password must be at least 6 characters")
+			.max(72, "Confirm password must be at most 72 characters"),
+	})
+	.refine((data) => data.newPassword === data.confirmPassword, {
+		path: ["confirmPassword"],
+		message: "New password and confirm password must match",
+	});
 
 export const validateRegisterUserInput = (input: unknown): ValidationResult<RegisterUserInput> => {
 	const parsed = registerUserSchema.safeParse(input);
@@ -122,5 +151,39 @@ export const validateGoogleLoginInput = (input: unknown): ValidationResult<Googl
 
 	return {
 		value: parsed.data,
+	};
+};
+
+export const validateForgotPasswordInput = (input: unknown): ValidationResult<ForgotPasswordInput> => {
+	const parsed = forgotPasswordSchema.safeParse(input);
+
+	if (!parsed.success) {
+		return { issues: mapZodIssues(parsed.error.issues) };
+	}
+
+	const value: ForgotPasswordBody = parsed.data;
+
+	return {
+		value: {
+			email: value.email,
+		},
+	};
+};
+
+export const validateResetPasswordInput = (input: unknown): ValidationResult<ResetPasswordInput> => {
+	const parsed = resetPasswordSchema.safeParse(input);
+
+	if (!parsed.success) {
+		return { issues: mapZodIssues(parsed.error.issues) };
+	}
+
+	const value: ResetPasswordBody = parsed.data;
+
+	return {
+		value: {
+			email: value.email,
+			otp: value.otp,
+			newPassword: value.newPassword,
+		},
 	};
 };

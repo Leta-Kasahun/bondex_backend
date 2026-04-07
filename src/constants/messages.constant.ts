@@ -14,4 +14,11 @@ export const AUTH_MESSAGES = {
 	USER_INVALID_CREDENTIALS: "Invalid email or password",
 	USER_EMAIL_NOT_VERIFIED: "Please verify your email before login",
 	GOOGLE_LOGIN_SUCCESS: "Google login successful",
+	USER_FORGOT_PASSWORD_OTP_SENT:
+		"If an account exists for this email, a password reset OTP has been sent",
+	USER_PASSWORD_RESET_SUCCESS: "Password reset successful",
+	USER_RESET_OTP_INVALID: "Invalid reset OTP or email",
+	USER_RESET_OTP_EXPIRED: "Reset OTP has expired. Please request a new one",
+	USER_RESET_OTP_ATTEMPTS_EXCEEDED:
+		"Maximum reset OTP attempts reached. Please request a new one",
 } as const;

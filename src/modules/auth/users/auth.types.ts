@@ -18,6 +18,25 @@ export type LoginUserBody = {
 
 export type LoginUserInput = LoginUserBody;
 
+export type ForgotPasswordBody = {
+	email: string;
+};
+
+export type ForgotPasswordInput = ForgotPasswordBody;
+
+export type ResetPasswordBody = {
+	email: string;
+	otp: string;
+	newPassword: string;
+	confirmPassword: string;
+};
+
+export type ResetPasswordInput = {
+	email: string;
+	otp: string;
+	newPassword: string;
+};
+
 export type VerifyRegistrationOtpInput = {
 	email: string;
 	otp: string;
