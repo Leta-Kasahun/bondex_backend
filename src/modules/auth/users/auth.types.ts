@@ -2,7 +2,7 @@ export type RegisterUserBody = {
 	name: string;
 	email: string;
 	password: string;
-	confirmPassword: string;
+	confirmPassword?: string | undefined;
 };
 
 export type RegisterUserInput = {
@@ -25,17 +25,19 @@ export type ForgotPasswordBody = {
 export type ForgotPasswordInput = ForgotPasswordBody;
 
 export type ResetPasswordBody = {
-	email: string;
-	otp: string;
 	newPassword: string;
 	confirmPassword: string;
 };
 
 export type ResetPasswordInput = {
-	email: string;
-	otp: string;
 	newPassword: string;
 };
+
+export type VerifyResetOtpBody = {
+	otp: string;
+};
+
+export type VerifyResetOtpInput = VerifyResetOtpBody;
 
 export type VerifyRegistrationOtpInput = {
 	email: string;

@@ -3,7 +3,7 @@ import prisma from "../../../../config/prisma";
 import { AUTH_MESSAGES } from "../../../../constants/messages.constant";
 import { ApiException } from "../../../../exceptions/api.exception";
 import { generateUserTokenPair } from "../../../../utils/jwt.util";
-import { comparePassword } from "../../../../utils/password.util";
+import { comparePassword, hashPassword } from "../../../../utils/password.util";
 import { GoogleLoginBody, LoginUserInput, UserAuthSuccess } from "../auth.types";
 
 type UserLoginResponse = UserAuthSuccess & {
@@ -102,14 +102,28 @@ export const googleLoginService = async (input: GoogleLoginBody): Promise<UserLo
 			},
 		});
 
-		if (!existingUser) {
-			throw ApiException.unauthorized(AUTH_MESSAGES.USER_INVALID_CREDENTIALS);
-		}
+		const resolvedUser = existingUser ?? await (async () => {
+			const randomPassword = `${tokenInfo.sub}.${Date.now()}`;
+			const hashedPassword = await hashPassword(randomPassword);
+
+			return tx.user.create({
+				data: {
+					name,
+					email,
+					password: hashedPassword,
+				},
+				select: {
+					id: true,
+					email: true,
+					name: true,
+				},
+			});
+		})();
 
 		await tx.userVerification.upsert({
-			where: { userId: existingUser.id },
+			where: { userId: resolvedUser.id },
 			create: {
-				userId: existingUser.id,
+				userId: resolvedUser.id,
 				emailVerified: true,
 				emailVerifiedAt: new Date(),
 				isVerified: true,
@@ -124,9 +138,9 @@ export const googleLoginService = async (input: GoogleLoginBody): Promise<UserLo
 		});
 
 		await tx.userGoogleAuth.upsert({
-			where: { userId: existingUser.id },
+			where: { userId: resolvedUser.id },
 			create: {
-				userId: existingUser.id,
+				userId: resolvedUser.id,
 				googleId: tokenInfo.sub,
 				email,
 				name,
@@ -140,7 +154,7 @@ export const googleLoginService = async (input: GoogleLoginBody): Promise<UserLo
 			},
 		});
 
-		return existingUser;
+		return resolvedUser;
 	});
 
 	const tokenPair = generateUserTokenPair({ id: user.id, email: user.email });

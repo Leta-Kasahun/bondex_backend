@@ -62,6 +62,8 @@ export const registerUserService = async (
 		return user;
 	});
 
+	let registrationMessage: string = AUTH_MESSAGES.USER_REGISTERED_OTP_SENT;
+
 	try {
 		await sendOtpEmail({
 			to: createdUser.email,
@@ -69,12 +71,12 @@ export const registerUserService = async (
 			otp: otpCode,
 		});
 	} catch {
-		throw ApiException.internal(AUTH_MESSAGES.USER_REGISTRATION_EMAIL_FAILED);
+		registrationMessage = AUTH_MESSAGES.USER_REGISTRATION_EMAIL_FAILED;
 	}
 
 	return {
 		userId: createdUser.id,
 		email: createdUser.email,
-		message: AUTH_MESSAGES.USER_REGISTERED_OTP_SENT,
+		message: registrationMessage,
 	};
 };

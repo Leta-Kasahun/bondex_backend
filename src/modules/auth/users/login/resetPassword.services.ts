@@ -3,67 +3,81 @@ import { AUTH_MESSAGES } from "../../../../constants/messages.constant";
 import { OTP_CONSTANTS } from "../../../../constants/otp.constant";
 import { ApiException } from "../../../../exceptions/api.exception";
 import { hashPassword } from "../../../../utils/password.util";
-import { ResetPasswordInput } from "../auth.types";
+import { ResetPasswordInput, VerifyResetOtpInput } from "../auth.types";
 
 export type ResetPasswordResponse = {
 	message: string;
 };
 
-export const resetPasswordService = async (
-	input: ResetPasswordInput
-): Promise<ResetPasswordResponse> => {
-	const user = await prisma.user.findUnique({
-		where: { email: input.email },
+export type VerifyResetOtpResponse = {
+	userId: string;
+	message: string;
+};
+
+export const verifyResetOtpService = async (
+	input: VerifyResetOtpInput
+): Promise<VerifyResetOtpResponse> => {
+	const matchingOtps = await prisma.userOTP.findMany({
+		where: { otpCode: input.otp },
 		select: {
-			id: true,
-			userOTP: {
-				select: {
-					otpCode: true,
-					otpExpiresAt: true,
-					attempts: true,
-				},
-			},
+			userId: true,
+			otpExpiresAt: true,
+			attempts: true,
 		},
+		take: 2,
 	});
 
-	if (!user || !user.userOTP) {
+	if (matchingOtps.length !== 1) {
 		throw ApiException.badRequest(AUTH_MESSAGES.USER_RESET_OTP_INVALID);
 	}
 
-	if (user.userOTP.attempts >= OTP_CONSTANTS.MAX_ATTEMPTS) {
+	const otpRecord = matchingOtps[0]!;
+
+	if (otpRecord.attempts >= OTP_CONSTANTS.MAX_ATTEMPTS) {
 		throw ApiException.tooManyRequests(AUTH_MESSAGES.USER_RESET_OTP_ATTEMPTS_EXCEEDED);
 	}
 
-	if (user.userOTP.otpExpiresAt.getTime() < Date.now()) {
+	if (otpRecord.otpExpiresAt.getTime() < Date.now()) {
 		throw ApiException.badRequest(AUTH_MESSAGES.USER_RESET_OTP_EXPIRED);
 	}
 
-	if (user.userOTP.otpCode !== input.otp) {
-		const nextAttempts = user.userOTP.attempts + 1;
-		await prisma.userOTP.update({
-			where: { userId: user.id },
-			data: { attempts: nextAttempts },
-		});
+	return {
+		userId: otpRecord.userId,
+		message: "OTP verified successfully",
+	};
+};
 
-		if (nextAttempts >= OTP_CONSTANTS.MAX_ATTEMPTS) {
-			throw ApiException.tooManyRequests(AUTH_MESSAGES.USER_RESET_OTP_ATTEMPTS_EXCEEDED);
-		}
+export const resetPasswordService = async (
+	userId: string,
+	input: ResetPasswordInput
+): Promise<ResetPasswordResponse> => {
+	const otpRecord = await prisma.userOTP.findUnique({
+		where: { userId },
+		select: {
+			otpExpiresAt: true,
+		},
+	});
 
+	if (!otpRecord) {
 		throw ApiException.badRequest(AUTH_MESSAGES.USER_RESET_OTP_INVALID);
+	}
+
+	if (otpRecord.otpExpiresAt.getTime() < Date.now()) {
+		throw ApiException.badRequest(AUTH_MESSAGES.USER_RESET_OTP_EXPIRED);
 	}
 
 	const hashedPassword = await hashPassword(input.newPassword);
 
 	await prisma.$transaction(async (tx) => {
 		await tx.user.update({
-			where: { id: user.id },
+			where: { id: userId },
 			data: {
 				password: hashedPassword,
 			},
 		});
 
 		await tx.userOTP.delete({
-			where: { userId: user.id },
+			where: { userId },
 		});
 	});
 
