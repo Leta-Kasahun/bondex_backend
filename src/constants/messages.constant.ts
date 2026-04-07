@@ -47,4 +47,8 @@ export const AUTH_MESSAGES = {
 	DEAL_STAGE_UPDATED: "Deal stage updated successfully",
 	DEAL_NOT_FOUND: "Deal not found",
 	DEAL_ALREADY_EXISTS_FOR_LEAD: "Deal already exists for this lead",
+	NOTIFICATIONS_LISTED: "Notifications fetched successfully",
+	NOTIFICATIONS_UNREAD_COUNT_FETCHED: "Unread notification count fetched successfully",
+	NOTIFICATION_MARKED_AS_READ: "Notification marked as read",
+	NOTIFICATION_NOT_FOUND: "Notification not found",
 } as const;
