@@ -21,4 +21,9 @@ export const AUTH_MESSAGES = {
 	USER_RESET_OTP_EXPIRED: "Reset OTP has expired. Please request a new one",
 	USER_RESET_OTP_ATTEMPTS_EXCEEDED:
 		"Maximum reset OTP attempts reached. Please request a new one",
+	ADMIN_INVALID_CREDENTIALS: "Invalid admin email or password",
+	ADMIN_LOGIN_OTP_SENT: "Admin login OTP sent to your email",
+	ADMIN_OTP_INVALID: "Invalid admin OTP or email",
+	ADMIN_OTP_EXPIRED: "Admin OTP has expired. Please request a new one",
+	ADMIN_LOGIN_SUCCESS: "Admin login successful",
 } as const;
