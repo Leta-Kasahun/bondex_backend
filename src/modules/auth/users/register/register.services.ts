@@ -1,9 +1,9 @@
-import bcrypt from "bcrypt";
 import prisma from "../../../../config/prisma";
 import { AUTH_MESSAGES } from "../../../../constants/messages.constant";
 import { ApiException } from "../../../../exceptions/api.exception";
 import { sendOtpEmail } from "../../../../utils/email.util";
 import { generateOtpCode, getOtpExpiryDate } from "../../../../utils/otp.util";
+import { hashPassword } from "../../../../utils/password.util";
 import { RegisterUserInput } from "../auth.types";
 
 export type RegisterUserResponse = {
@@ -24,7 +24,7 @@ export const registerUserService = async (
 		throw ApiException.conflict(AUTH_MESSAGES.USER_ALREADY_EXISTS);
 	}
 
-	const hashedPassword = await bcrypt.hash(input.password, 12);
+	const hashedPassword = await hashPassword(input.password);
 	const otpCode = generateOtpCode();
 	const otpExpiresAt = getOtpExpiryDate();
 
@@ -62,6 +62,8 @@ export const registerUserService = async (
 		return user;
 	});
 
+	let registrationMessage: string = AUTH_MESSAGES.USER_REGISTERED_OTP_SENT;
+
 	try {
 		await sendOtpEmail({
 			to: createdUser.email,
@@ -69,12 +71,12 @@ export const registerUserService = async (
 			otp: otpCode,
 		});
 	} catch {
-		throw ApiException.internal(AUTH_MESSAGES.USER_REGISTRATION_EMAIL_FAILED);
+		registrationMessage = AUTH_MESSAGES.USER_REGISTRATION_EMAIL_FAILED;
 	}
 
 	return {
 		userId: createdUser.id,
 		email: createdUser.email,
-		message: AUTH_MESSAGES.USER_REGISTERED_OTP_SENT,
+		message: registrationMessage,
 	};
 };

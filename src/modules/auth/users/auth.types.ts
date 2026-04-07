@@ -2,7 +2,7 @@ export type RegisterUserBody = {
 	name: string;
 	email: string;
 	password: string;
-	confirmPassword: string;
+	confirmPassword?: string | undefined;
 };
 
 export type RegisterUserInput = {
@@ -16,6 +16,29 @@ export type LoginUserBody = {
 	password: string;
 };
 
+export type LoginUserInput = LoginUserBody;
+
+export type ForgotPasswordBody = {
+	email: string;
+};
+
+export type ForgotPasswordInput = ForgotPasswordBody;
+
+export type ResetPasswordBody = {
+	newPassword: string;
+	confirmPassword: string;
+};
+
+export type ResetPasswordInput = {
+	newPassword: string;
+};
+
+export type VerifyResetOtpBody = {
+	otp: string;
+};
+
+export type VerifyResetOtpInput = VerifyResetOtpBody;
+
 export type VerifyRegistrationOtpInput = {
 	email: string;
 	otp: string;
@@ -26,6 +49,8 @@ export type VerifyRegistrationOtpBody = VerifyRegistrationOtpInput;
 export type GoogleSignupBody = {
 	idToken: string;
 };
+
+export type GoogleLoginBody = GoogleSignupBody;
 
 export type UserAuthSuccess = {
 	userId: string;
