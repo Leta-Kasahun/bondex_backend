@@ -1,0 +1,13 @@
+export const AUTH_MESSAGES = {
+	USER_ALREADY_EXISTS: "An account with this email already exists",
+	USER_REGISTERED_OTP_SENT: "Registration successful. Please verify your email using the OTP sent to your inbox",
+	USER_REGISTRATION_EMAIL_FAILED: "Registration completed, but we could not send the OTP email",
+	USER_REGISTRATION_OTP_VERIFIED: "Email verified successfully",
+	USER_OTP_INVALID: "Invalid OTP or email",
+	USER_OTP_EXPIRED: "OTP has expired. Please request a new OTP",
+	USER_OTP_ATTEMPTS_EXCEEDED: "Maximum OTP attempts reached. Please request a new OTP",
+	USER_ALREADY_VERIFIED: "User is already verified",
+	GOOGLE_TOKEN_INVALID: "Invalid Google token",
+	GOOGLE_EMAIL_NOT_VERIFIED: "Google account email is not verified",
+	GOOGLE_SIGNUP_SUCCESS: "Google signup successful",
+} as const;

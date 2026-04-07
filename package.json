@@ -27,7 +27,8 @@
     "node-telegram-bot-api": "^0.67.0",
     "nodemailer": "^8.0.4",
     "open": "^11.0.0",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
