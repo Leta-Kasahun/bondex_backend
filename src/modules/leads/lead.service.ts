@@ -2,6 +2,10 @@ import prisma from "../../config/prisma";
 import { AUTH_MESSAGES } from "../../constants/messages.constant";
 import { ApiException } from "../../exceptions/api.exception";
 import {
+	createHighPriorityNotification,
+	createLeadCreatedNotification,
+} from "../notifications/notification.service";
+import {
 	CreateLeadInput,
 	LeadListInput,
 	LeadView,
@@ -112,6 +116,11 @@ export const createLeadService = async (userId: string, input: CreateLeadInput):
 		select: leadSelect,
 	});
 
+	await createLeadCreatedNotification(lead.id);
+	if (lead.priority === "high") {
+		await createHighPriorityNotification(lead.id);
+	}
+
 	return toLeadView(lead);
 };
 
@@ -191,6 +200,10 @@ export const updateLeadService = async (
 		},
 		select: leadSelect,
 	});
+
+	if (existingLead.priority !== "high" && lead.priority === "high") {
+		await createHighPriorityNotification(lead.id);
+	}
 
 	return toLeadView(lead);
 };
