@@ -4,11 +4,12 @@ export type AdminLoginInput = {
 };
 
 export type AdminLoginResponse = {
+	adminId: string;
 	message: string;
 };
 
 export type AdminVerifyOtpInput = {
-	email: string;
+	adminId: string;
 	otp: string;
 };
 

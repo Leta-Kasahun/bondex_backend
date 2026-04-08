@@ -1,8 +1,14 @@
 import { RequestHandler } from "express";
+import prisma from "../../../../config/prisma";
+import { AUTH_MESSAGES } from "../../../../constants/messages.constant";
 import { jwtCookieOptions } from "../../../../config/jwt.config";
 import { ApiException } from "../../../../exceptions/api.exception";
 import { asyncHandler } from "../../../../utils/asyncHandler";
-import { setUserRefreshTokenCookie } from "../../../../utils/jwt.util";
+import {
+	USER_REFRESH_TOKEN_COOKIE_NAME,
+	clearUserRefreshTokenCookie,
+	setUserRefreshTokenCookie,
+} from "../../../../utils/jwt.util";
 import {
 	ForgotPasswordInput,
 	GoogleLoginBody,
@@ -92,5 +98,23 @@ export const resetPasswordController: RequestHandler = asyncHandler(async (req, 
 	res.status(200).json({
 		success: true,
 		message: result.message,
+	});
+});
+
+export const logoutUserController: RequestHandler = asyncHandler(async (req, res) => {
+	const refreshToken = req.cookies?.[USER_REFRESH_TOKEN_COOKIE_NAME] as string | undefined;
+
+	if (refreshToken) {
+		await prisma.session.updateMany({
+			where: { refreshToken, userType: "USER", revokedAt: null },
+			data: { revokedAt: new Date() },
+		});
+	}
+
+	clearUserRefreshTokenCookie(res);
+
+	res.status(200).json({
+		success: true,
+		message: AUTH_MESSAGES.USER_LOGOUT_SUCCESS,
 	});
 });

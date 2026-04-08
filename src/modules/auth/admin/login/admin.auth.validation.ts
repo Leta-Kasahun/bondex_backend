@@ -23,7 +23,7 @@ const adminLoginSchema = z.object({
 });
 
 const verifyAdminOtpSchema = z.object({
-	email: z.string().trim().toLowerCase().email("A valid email is required"),
+	adminId: z.string().trim().min(1, "Admin id is required"),
 	otp: z.string().trim().regex(/^\d{6}$/, "OTP must be a 6 digit code"),
 });
 
@@ -55,7 +55,7 @@ export const validateAdminVerifyOtpInput = (
 	const value: AdminVerifyOtpInput = parsed.data;
 	return {
 		value: {
-			email: value.email,
+			adminId: value.adminId,
 			otp: value.otp,
 		},
 	};
