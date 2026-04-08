@@ -14,6 +14,7 @@ import notificationRouter from "./modules/notifications/notification.route";
 import aiRouter from "./modules/ai/ai.route";
 import userRouter from "./modules/users/user.route";
 import adminRouter from "./modules/admin/admin.route";
+import telegramRouter from "./modules/telegram/telegram.route";
 import { startStaleHighPriorityLeadMonitor } from "./modules/notifications/notification.service";
 
 app.get("/",(req:Request,res:Response)=>res.status(200).json({success:true,message:"Boom TypeScript Express API is Running"}));
@@ -28,6 +29,7 @@ app.use("/api/notifications", notificationRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/telegram", telegramRouter);
 
 startStaleHighPriorityLeadMonitor();
 

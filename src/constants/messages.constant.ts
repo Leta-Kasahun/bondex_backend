@@ -69,4 +69,8 @@ export const AUTH_MESSAGES = {
 	NOTIFICATIONS_UNREAD_COUNT_FETCHED: "Unread notification count fetched successfully",
 	NOTIFICATION_MARKED_AS_READ: "Notification marked as read",
 	NOTIFICATION_NOT_FOUND: "Notification not found",
+	TELEGRAM_CONNECTED: "Telegram bot connected successfully",
+	TELEGRAM_DISCONNECTED: "Telegram bot disconnected successfully",
+	TELEGRAM_REPLY_SENT: "Telegram reply sent successfully",
+	TELEGRAM_THREAD_FETCHED: "Telegram thread fetched successfully",
 } as const;
