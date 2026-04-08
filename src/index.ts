@@ -11,6 +11,7 @@ import leadRouter from "./modules/leads/lead.route";
 import dealRouter from "./modules/deals/deal.route";
 import notificationRouter from "./modules/notifications/notification.route";
 import aiRouter from "./modules/ai/ai.route";
+import userRouter from "./modules/users/user.route";
 import { startStaleHighPriorityLeadMonitor } from "./modules/notifications/notification.service";
 
 app.get("/",(req:Request,res:Response)=>res.status(200).json({success:true,message:"Boom TypeScript Express API is Running"}));
@@ -22,6 +23,7 @@ app.use("/api/leads", leadRouter);
 app.use("/api/deals", dealRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/ai", aiRouter);
+app.use("/api/users", userRouter);
 
 startStaleHighPriorityLeadMonitor();
 
