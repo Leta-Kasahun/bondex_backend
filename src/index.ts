@@ -15,7 +15,10 @@ import aiRouter from "./modules/ai/ai.route";
 import userRouter from "./modules/users/user.route";
 import adminRouter from "./modules/admin/admin.route";
 import telegramRouter from "./modules/telegram/telegram.route";
+import gmailRouter from "./modules/gmail/gmail.route";
+import publicRouter from "./modules/public/public.route";
 import { startStaleHighPriorityLeadMonitor } from "./modules/notifications/notification.service";
+import { startGmailLeadPolling } from "./modules/gmail/gmail.service";
 
 app.get("/",(req:Request,res:Response)=>res.status(200).json({success:true,message:"Boom TypeScript Express API is Running"}));
 app.use("/api/auth/user", userAuthRouter);
@@ -30,8 +33,11 @@ app.use("/api/ai", aiRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/telegram", telegramRouter);
+app.use("/api/gmail", gmailRouter);
+app.use("/api/public", publicRouter);
 
 startStaleHighPriorityLeadMonitor();
+startGmailLeadPolling();
 
 app.use(errorMiddleware);
 

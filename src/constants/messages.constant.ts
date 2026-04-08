@@ -73,4 +73,7 @@ export const AUTH_MESSAGES = {
 	TELEGRAM_DISCONNECTED: "Telegram bot disconnected successfully",
 	TELEGRAM_REPLY_SENT: "Telegram reply sent successfully",
 	TELEGRAM_THREAD_FETCHED: "Telegram thread fetched successfully",
+	GMAIL_STATUS_FETCHED: "Gmail integration status fetched successfully",
+	GMAIL_DISCONNECTED: "Gmail disconnected successfully",
+	GMAIL_REPLY_SENT: "Gmail reply sent successfully",
 } as const;
