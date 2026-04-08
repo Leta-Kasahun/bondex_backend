@@ -10,5 +10,8 @@ export const adminLoginController: RequestHandler = asyncHandler(async (req, res
 	res.status(200).json({
 		success: true,
 		message: result.message,
+		data: {
+			adminId: result.adminId,
+		},
 	});
 });
