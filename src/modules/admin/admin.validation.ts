@@ -2,7 +2,7 @@ import { z } from "zod";
 import { BUSINESS_CONSTANTS } from "../../constants/business.constant";
 import { ValidationIssue } from "../../exceptions/validation.exception";
 import { ValidationResult } from "../../middlewares/validate.middleware";
-import { AdminUserListQueryInput, AdminUserParams } from "./admin.types";
+import { AdminSystemStatsQueryInput, AdminUserListQueryInput, AdminUserParams } from "./admin.types";
 
 const mapZodIssues = (issues: z.ZodIssue[]): ValidationIssue[] =>
 	issues.map((issue) => ({
@@ -33,6 +33,10 @@ const adminUserParamsSchema = z.object({
 	userId: z.string().trim().min(1, "User id is required"),
 });
 
+const adminSystemStatsQuerySchema = z.object({
+	range: z.enum(["today", "weekly", "monthly"]).default("weekly"),
+});
+
 export const validateAdminUserListQuery = (
 	input: unknown
 ): ValidationResult<AdminUserListQueryInput> => {
@@ -61,4 +65,15 @@ export const validateAdminUserParams = (input: unknown): ValidationResult<AdminU
 
 	const value = parsed.data;
 	return { value: { userId: value.userId } };
+};
+
+export const validateAdminSystemStatsQuery = (
+	input: unknown
+): ValidationResult<AdminSystemStatsQueryInput> => {
+	const parsed = adminSystemStatsQuerySchema.safeParse(input);
+	if (!parsed.success) {
+		return { issues: mapZodIssues(parsed.error.issues) };
+	}
+
+	return { value: parsed.data };
 };

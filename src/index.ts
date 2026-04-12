@@ -39,6 +39,7 @@ app.use("/api/public", publicRouter);
 startStaleHighPriorityLeadMonitor();
 startGmailLeadPolling();
 
-app.use(errorMiddleware);
+app.use(errorMiddleware);// Check what you're using in your code
+console.log('Google Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
 app.listen(env.PORT,()=>console.log(`server is lestning to port http://localhost:${env.PORT}`))

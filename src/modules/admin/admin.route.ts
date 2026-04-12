@@ -10,7 +10,11 @@ import {
 	listUsersForAdminController,
 	unblockUserForAdminController,
 } from "./admin.controller";
-import { validateAdminUserListQuery, validateAdminUserParams } from "./admin.validation";
+import {
+	validateAdminSystemStatsQuery,
+	validateAdminUserListQuery,
+	validateAdminUserParams,
+} from "./admin.validation";
 
 const adminRouter = Router();
 
@@ -21,6 +25,6 @@ adminRouter.get("/users/:userId", validateParams(validateAdminUserParams), getUs
 adminRouter.patch("/users/:userId/block", validateParams(validateAdminUserParams), blockUserForAdminController);
 adminRouter.patch("/users/:userId/unblock", validateParams(validateAdminUserParams), unblockUserForAdminController);
 adminRouter.delete("/users/:userId", validateParams(validateAdminUserParams), deleteUserForAdminController);
-adminRouter.get("/stats/system", getAdminSystemStatsController);
+adminRouter.get("/stats/system", validateQuery(validateAdminSystemStatsQuery), getAdminSystemStatsController);
 
 export default adminRouter;

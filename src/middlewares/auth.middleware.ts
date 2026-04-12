@@ -4,11 +4,11 @@ import {
 	USER_REFRESH_TOKEN_COOKIE_NAME,
 	VerifiedAuthTokenPayload,
 	verifyAccessToken,
-	verifyAdminAccessToken,
-	verifyUserAccessToken,
+	verifyRefreshToken,
 } from "../utils/jwt.util";
 import { ApiException } from "../exceptions/api.exception";
 import { asyncHandler } from "../utils/asyncHandler";
+import { AuthSubject } from "../types/jwt.types";
 
 const getBearerToken = (authorization?: string): string | null => {
 	if (!authorization || !authorization.startsWith("Bearer ")) {
@@ -18,18 +18,37 @@ const getBearerToken = (authorization?: string): string | null => {
 	return token.length ? token : null;
 };
 
-const getTokenFromRequest = (req: Request, refreshCookieName?: string): string | null => {
+const getTokenFromRequest = (
+	req: Request,
+	refreshCookieName?: string
+): { token: string | null; source: "header" | "cookie" | "none" } => {
 	const fromHeader = getBearerToken(req.headers.authorization);
 	if (fromHeader) {
-		return fromHeader;
+		return { token: fromHeader, source: "header" };
 	}
 
+	if (!refreshCookieName) {
+		return { token: null, source: "none" };
+	}
+
+	const fromCookie = req.cookies?.[refreshCookieName] as string | undefined;
+	if (fromCookie) {
+		return { token: fromCookie, source: "cookie" };
+	}
+
+	return { token: null, source: "none" };
+};
+
+const getRefreshTokenFromCookie = (
+	req: Request,
+	refreshCookieName?: string
+): string | null => {
 	if (!refreshCookieName) {
 		return null;
 	}
 
-	const fromCookie = req.cookies?.[refreshCookieName] as string | undefined;
-	return fromCookie ?? null;
+	const token = req.cookies?.[refreshCookieName] as string | undefined;
+	return token && token.length ? token : null;
 };
 
 const attachAuth = (req: Request, payload: VerifiedAuthTokenPayload): void => {
@@ -41,35 +60,58 @@ const attachAuth = (req: Request, payload: VerifiedAuthTokenPayload): void => {
 	};
 };
 
-const authenticate = (
-	verify: (token: string) => VerifiedAuthTokenPayload,
-	missingTokenMessage: string,
-	refreshCookieName?: string
-) =>
+const authenticate = ({
+	expectedSubject,
+	missingTokenMessage,
+	refreshCookieName,
+}: {
+	expectedSubject?: AuthSubject;
+	missingTokenMessage: string;
+	refreshCookieName?: string;
+}) =>
 	asyncHandler(async (req, _res, next) => {
-		const token = getTokenFromRequest(req, refreshCookieName);
+		const { token, source } = getTokenFromRequest(req, refreshCookieName);
 		if (!token) {
 			throw ApiException.unauthorized(missingTokenMessage);
 		}
 
-		attachAuth(req, verify(token));
+		let payload: VerifiedAuthTokenPayload;
+
+		if (source === "cookie") {
+			payload = verifyRefreshToken(token);
+		} else {
+			try {
+				payload = verifyAccessToken(token);
+			} catch {
+				const refreshToken = getRefreshTokenFromCookie(req, refreshCookieName);
+				if (!refreshToken) {
+					throw ApiException.unauthorized(missingTokenMessage);
+				}
+				payload = verifyRefreshToken(refreshToken);
+			}
+		}
+
+		if (expectedSubject && payload.type !== expectedSubject) {
+			throw ApiException.forbidden(`${expectedSubject === "USER" ? "User" : "Admin"} token required`);
+		}
+
+		attachAuth(req, payload);
 		next();
 	});
 
-export const authenticateUser = authenticate(
-	verifyUserAccessToken,
-	"User token is required",
-	USER_REFRESH_TOKEN_COOKIE_NAME
-);
+export const authenticateUser = authenticate({
+	expectedSubject: "USER",
+	missingTokenMessage: "User token is required",
+	refreshCookieName: USER_REFRESH_TOKEN_COOKIE_NAME,
+});
 
-export const authenticateAdmin = authenticate(
-	verifyAdminAccessToken,
-	"Admin token is required",
-	ADMIN_REFRESH_TOKEN_COOKIE_NAME
-);
+export const authenticateAdmin = authenticate({
+	expectedSubject: "ADMIN",
+	missingTokenMessage: "Admin token is required",
+	refreshCookieName: ADMIN_REFRESH_TOKEN_COOKIE_NAME,
+});
 
-export const authenticateAny = authenticate(
-	verifyAccessToken,
-	"Authorization token is required"
-);
+export const authenticateAny = authenticate({
+	missingTokenMessage: "Authorization token is required",
+});
 

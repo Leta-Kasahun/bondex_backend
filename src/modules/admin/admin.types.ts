@@ -9,6 +9,12 @@ export type AdminUserParams = {
 	userId: string;
 };
 
+export type AdminAnalyticsRangeInput = "today" | "weekly" | "monthly";
+
+export type AdminSystemStatsQueryInput = {
+	range: AdminAnalyticsRangeInput;
+};
+
 export type AdminUserListItem = {
 	id: string;
 	email: string;
@@ -56,6 +62,8 @@ export type AdminSystemStatsView = {
 	totalDeals: number;
 	totalWonDeals: number;
 	totalRevenue: number;
+	newUsersInRange: number;
+	newLeadsInRange: number;
 	newUsersThisWeek: number;
 	newLeadsThisWeek: number;
 	leadsByPlatform: Array<{ platform: string; count: number }>;

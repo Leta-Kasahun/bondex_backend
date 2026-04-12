@@ -12,6 +12,8 @@ type UserLoginResponse = UserAuthSuccess & {
 
 type GoogleTokenInfo = {
 	aud?: string;
+	azp?: string;
+	iss?: string;
 	email?: string;
 	email_verified?: string | boolean;
 	name?: string;
@@ -19,12 +21,26 @@ type GoogleTokenInfo = {
 	picture?: string;
 };
 
+const GOOGLE_VALID_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
+
+const getAllowedGoogleAudiences = (): string[] =>
+	authConfig.google.clientId
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+
 const verifyGoogleIdToken = async (
 	idToken: string
 ): Promise<Required<Pick<GoogleTokenInfo, "sub" | "email">> & GoogleTokenInfo> => {
-	const response = await fetch(
-		`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
-	);
+	let response: Response;
+
+	try {
+		response = await fetch(
+			`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+		);
+	} catch {
+		throw ApiException.unauthorized(AUTH_MESSAGES.GOOGLE_TOKEN_INVALID);
+	}
 
 	if (!response.ok) {
 		throw ApiException.unauthorized(AUTH_MESSAGES.GOOGLE_TOKEN_INVALID);
@@ -32,8 +48,16 @@ const verifyGoogleIdToken = async (
 
 	const tokenInfo = (await response.json()) as GoogleTokenInfo;
 	const isEmailVerified = tokenInfo.email_verified === true || tokenInfo.email_verified === "true";
+	const allowedAudiences = getAllowedGoogleAudiences();
+	const audience = tokenInfo.aud?.trim();
+	const isAudienceAllowed = audience ? allowedAudiences.includes(audience) : false;
+	const issuer = tokenInfo.iss?.trim();
+	const isIssuerValid = issuer ? GOOGLE_VALID_ISSUERS.has(issuer) : true;
+	const isAuthorizedPartyAllowed = tokenInfo.azp
+		? allowedAudiences.includes(tokenInfo.azp.trim())
+		: true;
 
-	if (!tokenInfo.sub || !tokenInfo.email || tokenInfo.aud !== authConfig.google.clientId) {
+	if (!tokenInfo.sub || !tokenInfo.email || !isAudienceAllowed || !isIssuerValid || !isAuthorizedPartyAllowed) {
 		throw ApiException.unauthorized(AUTH_MESSAGES.GOOGLE_TOKEN_INVALID);
 	}
 

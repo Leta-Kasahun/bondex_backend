@@ -3,31 +3,56 @@ import { aiConfig } from "../config/ai.config";
 import { ApiException } from "../exceptions/api.exception";
 
 const client = new GoogleGenerativeAI(aiConfig.apiKey);
-const model = client.getGenerativeModel({
-	model: "gemini-2.5-flash",
-	generationConfig: {
-		temperature: aiConfig.temperature,
-	},
-});
+
+const CANDIDATE_MODELS = Array.from(
+	new Set([
+		"gemini-2.5-flash",
+		aiConfig.model,
+	])
+);
+
+const extractOutput = (response: { text?: () => string }): string => {
+	try {
+		return response.text?.().trim() ?? "";
+	} catch {
+		return "";
+	}
+};
 
 export const generateGeminiText = async (prompt: string): Promise<string> => {
 	if (!prompt.trim()) {
 		throw ApiException.badRequest("Prompt is required");
 	}
 
-	try {
-		const result = await model.generateContent(prompt);
-		const output = result.response.text().trim();
+	let lastError: unknown;
 
-		if (!output) {
-			throw ApiException.internal("AI returned an empty response");
-		}
+	for (const modelName of CANDIDATE_MODELS) {
+		for (let attempt = 0; attempt < 2; attempt++) {
+			try {
+				const model = client.getGenerativeModel({
+					model: modelName,
+					generationConfig: {
+						temperature: aiConfig.temperature,
+					},
+				});
 
-		return output;
-	} catch (error) {
-		if (error instanceof ApiException) {
-			throw error;
+				const result = await model.generateContent(prompt);
+				const output = extractOutput(result.response);
+
+				if (output) {
+					return output;
+				}
+
+				lastError = new Error(`Empty response from model: ${modelName}`);
+			} catch (error) {
+				lastError = error;
+			}
 		}
-		throw ApiException.internal("Failed to generate AI response");
 	}
+
+	if (lastError instanceof ApiException) {
+		throw lastError;
+	}
+
+	throw ApiException.internal("Failed to generate AI response");
 };

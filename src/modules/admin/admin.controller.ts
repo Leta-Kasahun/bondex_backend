@@ -2,7 +2,11 @@ import { Request } from "express";
 import { AUTH_MESSAGES } from "../../constants/messages.constant";
 import { ApiException } from "../../exceptions/api.exception";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { AdminUserListQueryInput, AdminUserParams } from "./admin.types";
+import {
+	AdminSystemStatsQueryInput,
+	AdminUserListQueryInput,
+	AdminUserParams,
+} from "./admin.types";
 import {
 	blockUserForAdminService,
 	deleteUserForAdminService,
@@ -87,7 +91,8 @@ export const deleteUserForAdminController = asyncHandler(async (req, res) => {
 
 export const getAdminSystemStatsController = asyncHandler(async (req, res) => {
 	ensureAdminAuth(req);
-	const stats = await getAdminSystemStatsService();
+	const query = req.query as unknown as AdminSystemStatsQueryInput;
+	const stats = await getAdminSystemStatsService(query);
 
 	res.status(200).json({
 		success: true,

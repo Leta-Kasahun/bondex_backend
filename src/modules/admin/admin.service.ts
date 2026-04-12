@@ -2,6 +2,7 @@ import prisma from "../../config/prisma";
 import { AUTH_MESSAGES } from "../../constants/messages.constant";
 import { ApiException } from "../../exceptions/api.exception";
 import {
+	AdminSystemStatsQueryInput,
 	AdminSystemStatsView,
 	AdminUserDetailView,
 	AdminUserListItem,
@@ -24,6 +25,24 @@ const weekStart = (): Date => {
 	start.setDate(start.getDate() - diff);
 	start.setHours(0, 0, 0, 0);
 	return start;
+};
+
+const rangeStart = (range: AdminSystemStatsQueryInput["range"]): Date => {
+	const now = new Date();
+
+	if (range === "today") {
+		const start = new Date(now);
+		start.setHours(0, 0, 0, 0);
+		return start;
+	}
+
+	if (range === "monthly") {
+		const start = new Date(now.getFullYear(), now.getMonth(), 1);
+		start.setHours(0, 0, 0, 0);
+		return start;
+	}
+
+	return weekStart();
 };
 
 const getUserOrThrow = async (userId: string) => {
@@ -168,8 +187,11 @@ export const deleteUserForAdminService = async (userId: string): Promise<void> =
 	});
 };
 
-export const getAdminSystemStatsService = async (): Promise<AdminSystemStatsView> => {
-	const start = weekStart();
+export const getAdminSystemStatsService = async (
+	input: AdminSystemStatsQueryInput
+): Promise<AdminSystemStatsView> => {
+	const start = rangeStart(input.range);
+	const rangeFilter = { createdAt: { gte: start } };
 
 	const [
 		totalUsers,
@@ -188,15 +210,15 @@ export const getAdminSystemStatsService = async (): Promise<AdminSystemStatsView
 		prisma.user.count(),
 		prisma.user.count({ where: { isActive: true } }),
 		prisma.business.count(),
-		prisma.lead.count(),
-		prisma.deal.count(),
-		prisma.deal.count({ where: { stage: "won" } }),
-		prisma.deal.aggregate({ where: { stage: "won" }, _sum: { value: true } }),
-		prisma.user.count({ where: { createdAt: { gte: start } } }),
-		prisma.lead.count({ where: { createdAt: { gte: start } } }),
-		prisma.lead.groupBy({ by: ["platform"], _count: { _all: true } }),
-		prisma.lead.groupBy({ by: ["status"], _count: { _all: true } }),
-		prisma.deal.groupBy({ by: ["stage"], _count: { _all: true } }),
+		prisma.lead.count({ where: rangeFilter }),
+		prisma.deal.count({ where: rangeFilter }),
+		prisma.deal.count({ where: { stage: "won", ...rangeFilter } }),
+		prisma.deal.aggregate({ where: { stage: "won", ...rangeFilter }, _sum: { value: true } }),
+		prisma.user.count({ where: rangeFilter }),
+		prisma.lead.count({ where: rangeFilter }),
+		prisma.lead.groupBy({ by: ["platform"], where: rangeFilter, _count: { _all: true } }),
+		prisma.lead.groupBy({ by: ["status"], where: rangeFilter, _count: { _all: true } }),
+		prisma.deal.groupBy({ by: ["stage"], where: rangeFilter, _count: { _all: true } }),
 	]);
 
 	return {
@@ -207,6 +229,8 @@ export const getAdminSystemStatsService = async (): Promise<AdminSystemStatsView
 		totalDeals,
 		totalWonDeals,
 		totalRevenue: Number(totalRevenueAggregate._sum.value ?? 0),
+		newUsersInRange: newUsersThisWeek,
+		newLeadsInRange: newLeadsThisWeek,
 		newUsersThisWeek,
 		newLeadsThisWeek,
 		leadsByPlatform: leadsByPlatformRaw.map((item) => ({ platform: item.platform, count: item._count._all })),
