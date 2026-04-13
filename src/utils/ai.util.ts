@@ -2,7 +2,16 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { aiConfig } from "../config/ai.config";
 import { ApiException } from "../exceptions/api.exception";
 
-const client = new GoogleGenerativeAI(aiConfig.apiKey);
+const FALLBACK_AI_MESSAGE =
+	"AI assistant is temporarily unavailable. Please try again in a moment.";
+
+const createClient = (): GoogleGenerativeAI | null => {
+	if (!aiConfig.apiKey?.trim()) {
+		return null;
+	}
+
+	return new GoogleGenerativeAI(aiConfig.apiKey);
+};
 
 const CANDIDATE_MODELS = Array.from(
 	new Set([
@@ -22,6 +31,11 @@ const extractOutput = (response: { text?: () => string }): string => {
 export const generateGeminiText = async (prompt: string): Promise<string> => {
 	if (!prompt.trim()) {
 		throw ApiException.badRequest("Prompt is required");
+	}
+
+	const client = createClient();
+	if (!client) {
+		return FALLBACK_AI_MESSAGE;
 	}
 
 	let lastError: unknown;
@@ -54,5 +68,5 @@ export const generateGeminiText = async (prompt: string): Promise<string> => {
 		throw lastError;
 	}
 
-	throw ApiException.internal("Failed to generate AI response");
+	return FALLBACK_AI_MESSAGE;
 };
