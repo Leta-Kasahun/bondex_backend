@@ -29,4 +29,5 @@ export type PublicBusinessView = {
 	type: string | null;
 	description: string | null;
 	logo: string | null;
+	createdAt: Date;
 };

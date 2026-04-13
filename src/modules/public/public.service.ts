@@ -14,6 +14,7 @@ const publicBusinessSelect = {
 	type: true,
 	description: true,
 	logo: true,
+	createdAt: true,
 } as const;
 
 const toPublicBusinessView = (business: {
@@ -22,12 +23,14 @@ const toPublicBusinessView = (business: {
 	type: string | null;
 	description: string | null;
 	logo: string | null;
+	createdAt: Date;
 }): PublicBusinessView => ({
 	id: business.id,
 	name: business.name,
 	type: business.type,
 	description: business.description,
 	logo: business.logo,
+	createdAt: business.createdAt,
 });
 
 export const listPublicBusinessesService = async (): Promise<PublicBusinessView[]> => {
