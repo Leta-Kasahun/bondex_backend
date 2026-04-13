@@ -54,18 +54,24 @@ const getUserOrThrow = async (userId: string) => {
 };
 
 const userAggregateCounts = async (userId: string) => {
-	const [totalBusinesses, totalLeads, totalDeals] = await prisma.$transaction([
-		prisma.business.count({ where: { ownerId: userId } }),
-		prisma.lead.count({ where: { business: { ownerId: userId } } }),
-		prisma.deal.count({ where: { business: { ownerId: userId } } }),
+	const [businessAggregate, leadsAggregate, dealsAggregate] = await prisma.$transaction([
+		prisma.business.aggregate({ where: { ownerId: userId }, _count: { _all: true } }),
+		prisma.lead.aggregate({ where: { business: { ownerId: userId } }, _count: { _all: true } }),
+		prisma.deal.aggregate({ where: { business: { ownerId: userId } }, _count: { _all: true } }),
 	]);
+
+	const totalBusinesses = businessAggregate._count._all;
+	const totalLeads = leadsAggregate._count._all;
+	const totalDeals = dealsAggregate._count._all;
 	return { totalBusinesses, totalLeads, totalDeals };
 };
 
 export const listUsersForAdminService = async (
 	input: AdminUserListQueryInput
 ): Promise<{ items: AdminUserListItem[]; total: number; page: number; limit: number; offset: number }> => {
-	const offset = (input.page - 1) * input.limit;
+	const page = Number.isFinite(input.page) && input.page > 0 ? Math.floor(input.page) : 1;
+	const limit = Number.isFinite(input.limit) && input.limit > 0 ? Math.floor(input.limit) : 10;
+	const offset = (page - 1) * limit;
 
 	const where = {
 		...(input.search
@@ -79,16 +85,18 @@ export const listUsersForAdminService = async (
 		...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
 	};
 
-	const [total, users] = await prisma.$transaction([
-		prisma.user.count({ where }),
+	const [totalAggregate, users] = await prisma.$transaction([
+		prisma.user.aggregate({ where, _count: { _all: true } }),
 		prisma.user.findMany({
 			where,
 			orderBy: { createdAt: "desc" },
 			skip: offset,
-			take: input.limit,
+			take: limit,
 			select: userSelect,
 		}),
 	]);
+
+	const total = totalAggregate._count._all;
 
 	const items = await Promise.all(
 		users.map(async (user) => {
@@ -104,7 +112,7 @@ export const listUsersForAdminService = async (
 		})
 	);
 
-	return { items, total, page: input.page, limit: input.limit, offset };
+	return { items, total, page, limit, offset };
 };
 
 export const getUserDetailsForAdminService = async (userId: string): Promise<AdminUserDetailView> => {
@@ -194,32 +202,41 @@ export const getAdminSystemStatsService = async (
 	const rangeFilter = { createdAt: { gte: start } };
 
 	const [
-		totalUsers,
-		totalActiveUsers,
-		totalBusinesses,
-		totalLeads,
-		totalDeals,
-		totalWonDeals,
+		totalUsersAggregate,
+		totalActiveUsersAggregate,
+		totalBusinessesAggregate,
+		totalLeadsAggregate,
+		totalDealsAggregate,
+		totalWonDealsAggregate,
 		totalRevenueAggregate,
-		newUsersThisWeek,
-		newLeadsThisWeek,
+		newUsersAggregate,
+		newLeadsAggregate,
 		leadsByPlatformRaw,
 		leadsByStatusRaw,
 		dealsByStageRaw,
 	] = await prisma.$transaction([
-		prisma.user.count(),
-		prisma.user.count({ where: { isActive: true } }),
-		prisma.business.count(),
-		prisma.lead.count({ where: rangeFilter }),
-		prisma.deal.count({ where: rangeFilter }),
-		prisma.deal.count({ where: { stage: "won", ...rangeFilter } }),
+		prisma.user.aggregate({ _count: { _all: true } }),
+		prisma.user.aggregate({ where: { isActive: true }, _count: { _all: true } }),
+		prisma.business.aggregate({ _count: { _all: true } }),
+		prisma.lead.aggregate({ where: rangeFilter, _count: { _all: true } }),
+		prisma.deal.aggregate({ where: rangeFilter, _count: { _all: true } }),
+		prisma.deal.aggregate({ where: { stage: "won", ...rangeFilter }, _count: { _all: true } }),
 		prisma.deal.aggregate({ where: { stage: "won", ...rangeFilter }, _sum: { value: true } }),
-		prisma.user.count({ where: rangeFilter }),
-		prisma.lead.count({ where: rangeFilter }),
+		prisma.user.aggregate({ where: rangeFilter, _count: { _all: true } }),
+		prisma.lead.aggregate({ where: rangeFilter, _count: { _all: true } }),
 		prisma.lead.groupBy({ by: ["platform"], where: rangeFilter, _count: { _all: true } }),
 		prisma.lead.groupBy({ by: ["status"], where: rangeFilter, _count: { _all: true } }),
 		prisma.deal.groupBy({ by: ["stage"], where: rangeFilter, _count: { _all: true } }),
 	]);
+
+	const totalUsers = totalUsersAggregate._count._all;
+	const totalActiveUsers = totalActiveUsersAggregate._count._all;
+	const totalBusinesses = totalBusinessesAggregate._count._all;
+	const totalLeads = totalLeadsAggregate._count._all;
+	const totalDeals = totalDealsAggregate._count._all;
+	const totalWonDeals = totalWonDealsAggregate._count._all;
+	const newUsersThisWeek = newUsersAggregate._count._all;
+	const newLeadsThisWeek = newLeadsAggregate._count._all;
 
 	return {
 		totalUsers,
