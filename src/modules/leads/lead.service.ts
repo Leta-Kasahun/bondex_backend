@@ -130,7 +130,9 @@ export const listLeadsService = async (
 ): Promise<{ items: LeadView[]; total: number; page: number; limit: number; offset: number }> => {
 	await ensureOwnedBusiness(input.businessId, userId);
 
-	const offset = (input.page - 1) * input.limit;
+	const page = Number.isFinite(input.page) && input.page > 0 ? Math.trunc(input.page) : 1;
+	const limit = Number.isFinite(input.limit) && input.limit > 0 ? Math.trunc(input.limit) : 10;
+	const offset = (page - 1) * limit;
 	const search = input.search;
 
 	const where = {
@@ -150,22 +152,27 @@ export const listLeadsService = async (
 			: {}),
 	};
 
-	const [total, leads] = await prisma.$transaction([
-		prisma.lead.count({ where }),
+	const [{ _count }, leads] = await prisma.$transaction([
+		prisma.lead.aggregate({
+			where,
+			_count: { _all: true },
+		}),
 		prisma.lead.findMany({
 			where,
 			orderBy: { createdAt: "desc" },
 			skip: offset,
-			take: input.limit,
+			take: limit,
 			select: leadSelect,
 		}),
 	]);
 
+	const total = _count._all;
+
 	return {
 		items: leads.map(toLeadView),
 		total,
-		page: input.page,
-		limit: input.limit,
+		page,
+		limit,
 		offset,
 	};
 };
