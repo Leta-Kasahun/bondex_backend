@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticateUser } from "../../middlewares/auth.middleware";
-import { authorizeUserOnly } from "../../middlewares/authorize.middleware";
+import { authenticateAny } from "../../middlewares/auth.middleware";
+import { authorizeSubject } from "../../middlewares/authorize.middleware";
 import { validateParams, validateQuery } from "../../middlewares/validate.middleware";
 import {
 	getUnreadNotificationCountController,
@@ -15,7 +15,7 @@ import {
 
 const notificationRouter = Router();
 
-notificationRouter.use(authenticateUser, authorizeUserOnly);
+notificationRouter.use(authenticateAny, authorizeSubject("USER", "ADMIN"));
 
 notificationRouter.get("/unread-count", validateQuery(validateNotificationUnreadCountQuery), getUnreadNotificationCountController);
 notificationRouter.get("/", validateQuery(validateNotificationListQuery), listNotificationsController);

@@ -1,6 +1,7 @@
 import prisma from "../../../config/prisma";
 import { AUTH_MESSAGES } from "../../../constants/messages.constant";
 import { ApiException } from "../../../exceptions/api.exception";
+import { AuthSubject } from "../../../types/jwt.types";
 import {
 	NotificationListInput,
 	NotificationView,
@@ -158,25 +159,28 @@ export const listStaleHighPriorityLeads = async (): Promise<Array<{
 };
 
 export const listNotificationsService = async (
-	userId: string,
+	actorId: string,
+	actorType: AuthSubject,
 	input: NotificationListInput
 ): Promise<{ items: NotificationView[]; total: number; page: number; limit: number; offset: number }> => {
-	if (input.businessId) {
-		await ensureOwnedBusiness(input.businessId, userId);
+	if (input.businessId && actorType === "USER") {
+		await ensureOwnedBusiness(input.businessId, actorId);
 	}
 
 	const page = Number.isFinite(input.page) && input.page > 0 ? Math.trunc(input.page) : 1;
 	const limit = Number.isFinite(input.limit) && input.limit > 0 ? Math.trunc(input.limit) : 10;
 	const offset = (page - 1) * limit;
-	const where = input.businessId
+	const baseWhere = input.businessId
 		? {
 				businessId: input.businessId,
 				...(input.read !== undefined ? { read: input.read } : {}),
 		  }
 		: {
-				business: { ownerId: userId },
+				...(actorType === "USER" ? { business: { ownerId: actorId } } : {}),
 				...(input.read !== undefined ? { read: input.read } : {}),
 		  };
+
+	const where = baseWhere;
 
 	const totalResult = await prisma.notification.aggregate({
 		where,
@@ -203,16 +207,20 @@ export const listNotificationsService = async (
 };
 
 export const countUnreadNotificationsService = async (
-	userId: string,
+	actorId: string,
+	actorType: AuthSubject,
 	businessId?: string
 ): Promise<number> => {
-	if (businessId) {
-		await ensureOwnedBusiness(businessId, userId);
+	if (businessId && actorType === "USER") {
+		await ensureOwnedBusiness(businessId, actorId);
 	}
 
 	const where = businessId
 		? { businessId, read: false }
-		: { business: { ownerId: userId }, read: false };
+		: {
+				...(actorType === "USER" ? { business: { ownerId: actorId } } : {}),
+				read: false,
+		  };
 
 	const result = await prisma.notification.aggregate({
 		where,
@@ -223,13 +231,14 @@ export const countUnreadNotificationsService = async (
 };
 
 export const markNotificationAsReadService = async (
-	userId: string,
+	actorId: string,
+	actorType: AuthSubject,
 	notificationId: string
 ): Promise<NotificationView> => {
 	const notification = await prisma.notification.findFirst({
 		where: {
 			id: notificationId,
-			business: { ownerId: userId },
+			...(actorType === "USER" ? { business: { ownerId: actorId } } : {}),
 		},
 		select: { id: true },
 	});

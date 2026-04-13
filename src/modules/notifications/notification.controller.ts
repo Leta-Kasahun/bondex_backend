@@ -13,18 +13,21 @@ import {
 	markNotificationAsReadService,
 } from "./appNotification/app.notification.service";
 
-const getUserIdFromRequest = (req: Request): string => {
-	const userId = req.auth?.id;
-	if (!userId || req.auth?.type !== "USER") {
-		throw ApiException.unauthorized("User authentication is required");
+const getNotificationActorFromRequest = (req: Request): { actorId: string; actorType: "USER" | "ADMIN" } => {
+	const actorId = req.auth?.id;
+	const actorType = req.auth?.type;
+
+	if (!actorId || (actorType !== "USER" && actorType !== "ADMIN")) {
+		throw ApiException.unauthorized("User or admin authentication is required");
 	}
-	return userId;
+
+	return { actorId, actorType };
 };
 
 export const listNotificationsController = asyncHandler(async (req, res) => {
-	const userId = getUserIdFromRequest(req);
+	const { actorId, actorType } = getNotificationActorFromRequest(req);
 	const query = req.query as unknown as NotificationListInput;
-	const result = await listNotificationsService(userId, query);
+	const result = await listNotificationsService(actorId, actorType, query);
 
 	res.status(200).json({
 		success: true,
@@ -40,9 +43,9 @@ export const listNotificationsController = asyncHandler(async (req, res) => {
 });
 
 export const markNotificationAsReadController = asyncHandler(async (req, res) => {
-	const userId = getUserIdFromRequest(req);
+	const { actorId, actorType } = getNotificationActorFromRequest(req);
 	const params = req.params as unknown as NotificationParams;
-	const notification = await markNotificationAsReadService(userId, params.notificationId);
+	const notification = await markNotificationAsReadService(actorId, actorType, params.notificationId);
 
 	res.status(200).json({
 		success: true,
@@ -52,9 +55,9 @@ export const markNotificationAsReadController = asyncHandler(async (req, res) =>
 });
 
 export const getUnreadNotificationCountController = asyncHandler(async (req, res) => {
-	const userId = getUserIdFromRequest(req);
+	const { actorId, actorType } = getNotificationActorFromRequest(req);
 	const query = req.query as unknown as NotificationUnreadCountQuery;
-	const unreadCount = await countUnreadNotificationsService(userId, query.businessId);
+	const unreadCount = await countUnreadNotificationsService(actorId, actorType, query.businessId);
 
 	res.status(200).json({
 		success: true,

@@ -28,6 +28,16 @@ const getTokenFromRequest = (
 	}
 
 	if (!refreshCookieName) {
+		const fromUserCookie = req.cookies?.[USER_REFRESH_TOKEN_COOKIE_NAME] as string | undefined;
+		if (fromUserCookie) {
+			return { token: fromUserCookie, source: "cookie" };
+		}
+
+		const fromAdminCookie = req.cookies?.[ADMIN_REFRESH_TOKEN_COOKIE_NAME] as string | undefined;
+		if (fromAdminCookie) {
+			return { token: fromAdminCookie, source: "cookie" };
+		}
+
 		return { token: null, source: "none" };
 	}
 
@@ -83,7 +93,11 @@ const authenticate = ({
 			try {
 				payload = verifyAccessToken(token);
 			} catch {
-				const refreshToken = getRefreshTokenFromCookie(req, refreshCookieName);
+				const refreshToken = refreshCookieName
+					? getRefreshTokenFromCookie(req, refreshCookieName)
+					: (req.cookies?.[USER_REFRESH_TOKEN_COOKIE_NAME] as string | undefined) ??
+					  (req.cookies?.[ADMIN_REFRESH_TOKEN_COOKIE_NAME] as string | undefined) ??
+					  null;
 				if (!refreshToken) {
 					throw ApiException.unauthorized(missingTokenMessage);
 				}
