@@ -15,6 +15,27 @@ const trimToUndefined = (value: string | undefined): string | undefined => {
 	return trimmed ? trimmed : undefined;
 };
 
+const parseIsActiveFilter = (value: unknown): boolean | undefined => {
+	if (typeof value === "boolean") {
+		return value;
+	}
+
+	if (typeof value !== "string") {
+		return undefined;
+	}
+
+	const normalized = value.trim().toLowerCase();
+	if (["true", "1", "active"].includes(normalized)) {
+		return true;
+	}
+
+	if (["false", "0", "blocked", "inactive"].includes(normalized)) {
+		return false;
+	}
+
+	return undefined;
+};
+
 const adminUserListQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(BUSINESS_CONSTANTS.DEFAULT_PAGE),
 	limit: z.coerce
@@ -25,7 +46,7 @@ const adminUserListQuerySchema = z.object({
 		.default(BUSINESS_CONSTANTS.DEFAULT_LIMIT),
 	search: z.string().trim().max(120).optional(),
 	isActive: z
-		.union([z.boolean(), z.string().trim().toLowerCase().regex(/^(true|false)$/).transform((v) => v === "true")])
+		.preprocess((raw) => parseIsActiveFilter(raw), z.boolean().optional())
 		.optional(),
 });
 

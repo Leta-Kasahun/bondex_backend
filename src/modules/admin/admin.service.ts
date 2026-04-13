@@ -45,6 +45,36 @@ const rangeStart = (range: AdminSystemStatsQueryInput["range"]): Date => {
 	return weekStart();
 };
 
+const normalizeSearch = (value: unknown): string | undefined => {
+	if (typeof value !== "string") {
+		return undefined;
+	}
+
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const normalizeIsActive = (value: unknown): boolean | undefined => {
+	if (typeof value === "boolean") {
+		return value;
+	}
+
+	if (typeof value !== "string") {
+		return undefined;
+	}
+
+	const normalized = value.trim().toLowerCase();
+	if (["true", "1", "active"].includes(normalized)) {
+		return true;
+	}
+
+	if (["false", "0", "blocked", "inactive"].includes(normalized)) {
+		return false;
+	}
+
+	return undefined;
+};
+
 const getUserOrThrow = async (userId: string) => {
 	const user = await prisma.user.findUnique({ where: { id: userId }, select: userSelect });
 	if (!user) {
@@ -72,17 +102,19 @@ export const listUsersForAdminService = async (
 	const page = Number.isFinite(input.page) && input.page > 0 ? Math.floor(input.page) : 1;
 	const limit = Number.isFinite(input.limit) && input.limit > 0 ? Math.floor(input.limit) : 10;
 	const offset = (page - 1) * limit;
+	const search = normalizeSearch(input.search);
+	const isActive = normalizeIsActive(input.isActive);
 
 	const where = {
-		...(input.search
+		...(search
 			? {
 				OR: [
-					{ name: { contains: input.search, mode: "insensitive" as const } },
-					{ email: { contains: input.search, mode: "insensitive" as const } },
+					{ name: { contains: search, mode: "insensitive" as const } },
+					{ email: { contains: search, mode: "insensitive" as const } },
 				],
 			}
 			: {}),
-		...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+		...(isActive !== undefined ? { isActive } : {}),
 	};
 
 	const [totalAggregate, users] = await prisma.$transaction([
