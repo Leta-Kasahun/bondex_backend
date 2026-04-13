@@ -33,7 +33,11 @@ export const validateBody = <T>(validator: Validator<T>): RequestHandler =>
 
 export const validateQuery = <T>(validator: Validator<T>): RequestHandler =>
 	buildValidatorMiddleware<T>((req) => req.query, (req, value) => {
-		req.query = value as typeof req.query;
+		const query = req.query as Record<string, unknown>;
+		for (const key of Object.keys(query)) {
+			delete query[key];
+		}
+		Object.assign(query, value as Record<string, unknown>);
 	}, validator);
 
 export const validateParams = <T>(validator: Validator<T>): RequestHandler =>

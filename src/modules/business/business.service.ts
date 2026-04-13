@@ -79,7 +79,9 @@ export const listBusinessesService = async (
 	userId: string,
 	input: BusinessListInput
 ): Promise<{ items: BusinessView[]; total: number; page: number; limit: number }> => {
-	const skip = (input.page - 1) * input.limit;
+	const page = Number.isFinite(input.page) && input.page > 0 ? Math.trunc(input.page) : 1;
+	const limit = Number.isFinite(input.limit) && input.limit > 0 ? Math.trunc(input.limit) : 10;
+	const skip = (page - 1) * limit;
 	const search = input.search;
 
 	const where = {
@@ -94,22 +96,27 @@ export const listBusinessesService = async (
 			: {}),
 	};
 
-	const [total, businesses] = await prisma.$transaction([
-		prisma.business.count({ where }),
+	const [{ _count }, businesses] = await prisma.$transaction([
+		prisma.business.aggregate({
+			where,
+			_count: { _all: true },
+		}),
 		prisma.business.findMany({
 			where,
 			orderBy: { updatedAt: "desc" },
 			skip,
-			take: input.limit,
+			take: limit,
 			select: businessSelect,
 		}),
 	]);
 
+	const total = _count._all;
+
 	return {
 		items: businesses.map(toBusinessView),
 		total,
-		page: input.page,
-		limit: input.limit,
+		page,
+		limit,
 	};
 };
 
