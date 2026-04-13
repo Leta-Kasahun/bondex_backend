@@ -10,6 +10,7 @@ import {
 } from "./deal.types";
 import {
 	convertLeadToDealService,
+	deleteDealService,
 	listDealsService,
 	updateDealStageService,
 } from "./deal.service";
@@ -62,5 +63,16 @@ export const updateDealStageController = asyncHandler(async (req, res) => {
 		success: true,
 		message: AUTH_MESSAGES.DEAL_STAGE_UPDATED,
 		data: deal,
+	});
+});
+
+export const deleteDealController = asyncHandler(async (req, res) => {
+	const userId = getUserIdFromRequest(req);
+	const params = req.params as unknown as DealParams;
+	await deleteDealService(userId, params.dealId);
+
+	res.status(200).json({
+		success: true,
+		message: AUTH_MESSAGES.DEAL_DELETED,
 	});
 });

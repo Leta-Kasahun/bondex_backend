@@ -122,7 +122,9 @@ export const listDealsService = async (
 ): Promise<{ items: DealView[]; total: number; page: number; limit: number; offset: number }> => {
 	await ensureOwnedBusiness(input.businessId, userId);
 
-	const offset = (input.page - 1) * input.limit;
+	const page = Number.isFinite(input.page) && input.page > 0 ? Math.trunc(input.page) : 1;
+	const limit = Number.isFinite(input.limit) && input.limit > 0 ? Math.trunc(input.limit) : 10;
+	const offset = (page - 1) * limit;
 	const search = input.search;
 
 	const where = {
@@ -131,22 +133,27 @@ export const listDealsService = async (
 		...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
 	};
 
-	const [total, deals] = await prisma.$transaction([
-		prisma.deal.count({ where }),
+	const [{ _count }, deals] = await prisma.$transaction([
+		prisma.deal.aggregate({
+			where,
+			_count: { _all: true },
+		}),
 		prisma.deal.findMany({
 			where,
 			orderBy: { updatedAt: "desc" },
 			skip: offset,
-			take: input.limit,
+			take: limit,
 			select: dealSelect,
 		}),
 	]);
 
+	const total = _count._all;
+
 	return {
 		items: deals.map(toDealView),
 		total,
-		page: input.page,
-		limit: input.limit,
+		page,
+		limit,
 		offset,
 	};
 };
@@ -170,4 +177,12 @@ export const updateDealStageService = async (
 	});
 
 	return toDealView(deal);
+};
+
+export const deleteDealService = async (userId: string, dealId: string): Promise<void> => {
+	await findOwnedDeal(dealId, userId);
+
+	await prisma.deal.delete({
+		where: { id: dealId },
+	});
 };

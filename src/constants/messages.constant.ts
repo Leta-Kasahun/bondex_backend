@@ -63,6 +63,7 @@ export const AUTH_MESSAGES = {
 	DEAL_CREATED: "Deal created successfully",
 	DEALS_LISTED: "Deals fetched successfully",
 	DEAL_STAGE_UPDATED: "Deal stage updated successfully",
+	DEAL_DELETED: "Deal deleted successfully",
 	DEAL_NOT_FOUND: "Deal not found",
 	DEAL_ALREADY_EXISTS_FOR_LEAD: "Deal already exists for this lead",
 	NOTIFICATIONS_LISTED: "Notifications fetched successfully",
