@@ -1,19 +1,19 @@
 export interface NotificationListQuery {
-	businessId: string;
+	businessId?: string;
 	page?: number;
 	limit?: number;
 	read?: boolean;
 }
 
 export interface NotificationListInput {
-	businessId: string;
+	businessId?: string;
 	page: number;
 	limit: number;
 	read?: boolean;
 }
 
 export interface NotificationUnreadCountQuery {
-	businessId: string;
+	businessId?: string;
 }
 
 export interface NotificationParams {

@@ -161,31 +161,37 @@ export const listNotificationsService = async (
 	userId: string,
 	input: NotificationListInput
 ): Promise<{ items: NotificationView[]; total: number; page: number; limit: number; offset: number }> => {
-	await ensureOwnedBusiness(input.businessId, userId);
+	if (input.businessId) {
+		await ensureOwnedBusiness(input.businessId, userId);
+	}
 
 	const page = Number.isFinite(input.page) && input.page > 0 ? Math.trunc(input.page) : 1;
 	const limit = Number.isFinite(input.limit) && input.limit > 0 ? Math.trunc(input.limit) : 10;
 	const offset = (page - 1) * limit;
-	const where = {
-		businessId: input.businessId,
-		...(input.read !== undefined ? { read: input.read } : {}),
-	};
+	const where = input.businessId
+		? {
+				businessId: input.businessId,
+				...(input.read !== undefined ? { read: input.read } : {}),
+		  }
+		: {
+				business: { ownerId: userId },
+				...(input.read !== undefined ? { read: input.read } : {}),
+		  };
 
-	const [{ _count }, items] = await prisma.$transaction([
-		prisma.notification.aggregate({
-			where,
-			_count: { _all: true },
-		}),
-		prisma.notification.findMany({
-			where,
-			orderBy: { createdAt: "desc" },
-			skip: offset,
-			take: limit,
-			select: notificationSelect,
-		}),
-	]);
+	const totalResult = await prisma.notification.aggregate({
+		where,
+		_count: { _all: true },
+	});
 
-	const total = _count._all;
+	const items = await prisma.notification.findMany({
+		where,
+		orderBy: { createdAt: "desc" },
+		skip: offset,
+		take: limit,
+		select: notificationSelect,
+	});
+
+	const total = totalResult._count?._all ?? 0;
 
 	return {
 		items: items.map(toNotificationView),
@@ -198,14 +204,22 @@ export const listNotificationsService = async (
 
 export const countUnreadNotificationsService = async (
 	userId: string,
-	businessId: string
+	businessId?: string
 ): Promise<number> => {
-	await ensureOwnedBusiness(businessId, userId);
+	if (businessId) {
+		await ensureOwnedBusiness(businessId, userId);
+	}
+
+	const where = businessId
+		? { businessId, read: false }
+		: { business: { ownerId: userId }, read: false };
+
 	const result = await prisma.notification.aggregate({
-		where: { businessId, read: false },
+		where,
 		_count: { _all: true },
 	});
-	return result._count._all;
+
+	return result._count?._all ?? 0;
 };
 
 export const markNotificationAsReadService = async (

@@ -14,7 +14,7 @@ const mapZodIssues = (issues: z.ZodIssue[]): ValidationIssue[] =>
 	}));
 
 const listQuerySchema = z.object({
-	businessId: z.string().trim().min(1, "Business id is required"),
+	businessId: z.string().trim().min(1, "Business id is required").optional(),
 	page: z.coerce.number().int().min(1, "Page must be at least 1").default(1),
 	limit: z.coerce.number().int().min(1, "Limit must be at least 1").max(50, "Limit must be at most 50").default(10),
 	read: z
@@ -28,7 +28,7 @@ const paramsSchema = z.object({
 });
 
 const unreadCountQuerySchema = z.object({
-	businessId: z.string().trim().min(1, "Business id is required"),
+	businessId: z.string().trim().min(1, "Business id is required").optional(),
 });
 
 export const validateNotificationListQuery = (
@@ -42,7 +42,7 @@ export const validateNotificationListQuery = (
 	const value = parsed.data;
 	return {
 		value: {
-			businessId: value.businessId,
+			...(value.businessId !== undefined ? { businessId: value.businessId } : {}),
 			page: value.page,
 			limit: value.limit,
 			...(value.read !== undefined ? { read: value.read } : {}),
@@ -74,8 +74,6 @@ export const validateNotificationUnreadCountQuery = (
 	}
 
 	return {
-		value: {
-			businessId: parsed.data.businessId,
-		},
+		value: parsed.data.businessId !== undefined ? { businessId: parsed.data.businessId } : {},
 	};
 };
