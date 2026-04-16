@@ -42,7 +42,6 @@ This backend exposes REST APIs for CRM flows: auth, businesses, leads, deals, no
 - Gmail integration (status, reply, disconnect) plus background lead polling.
 
 ## Tech Stack
-
 - Runtime: Node.js, TypeScript, Express
 - Database: PostgreSQL + Prisma ORM
 - Validation: Zod
